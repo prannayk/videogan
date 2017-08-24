@@ -45,9 +45,9 @@ function WriteGif(filename, movie)
   cmd = "ffmpeg -f image2 -i " .. filename .. ".%08d.png -y " .. filename
   print('==> ' .. cmd)
   sys.execute(cmd)
-  for fr=1,movie:size(3) do
-    os.remove(filename .. '.' .. string.format('%08d', fr) .. '.png')
-  end
+--  for fr=1,movie:size(3) do
+--    os.remove(filename .. '.' .. string.format('%08d', fr) .. '.png')
+--end
 end
 
 paths.mkdir('vis/')
