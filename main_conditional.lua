@@ -28,8 +28,8 @@ opt = {
   display_port = 8000,  -- port to push graphs
   display_id = 1,       -- window ID when pushing graphs
   mean = {0,0,0},
-  data_root = '/data/vision/torralba/crossmodal/flickr_videos/',
-  data_list = '/data/vision/torralba/crossmodal/flickr_videos/scene_extract/lists-full/_b_beach.txt.train',
+  data_root = '../video_stable/',
+  data_list = '../video_stable/list.txt',
 }
 
 -- one-line argument parser. parses enviroment variables to override the defaults

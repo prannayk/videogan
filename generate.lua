@@ -5,7 +5,7 @@ require 'cunn'
 require 'cudnn'
 
 opt = {
-  model = 'models/golf/iter65000_net.t7',
+  model = 'checkpoints/beach100/iter5000_net.t7',
   batchSize = 128,
   gpu = 1,
   cudnn = 1,

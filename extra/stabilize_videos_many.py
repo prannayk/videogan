@@ -12,16 +12,15 @@ import random
 from scipy.ndimage.filters import gaussian_filter
 
 MIN_MATCH_COUNT = 10
-VIDEO_SIZE = 128
-CROP_SIZE = 128
+VIDEO_SIZE = 32
+CROP_SIZE = 32
 MAX_FRAMES = 33
-MIN_FRAMES = 16
-FRAMES_DELAY = 2
+MIN_FRAMES = 4
+FRAMES_DELAY = 0
 
 def get_video_info(video):
-    stats = subprocess.check_output("ffprobe -select_streams v -v error -show_entries stream=width,height,duration -of default=noprint_wrappers=1 {}".format(video), shell = True)
+    stats = subprocess.check_output("ffprobe -show_entries stream=width,height,duration -of default=noprint_wrappers=1 %s"%(video), shell = True)
     info = dict(x.split("=") for x in stats.strip().split("\n"))
-    print info
     return {"width": int(info['width']),
             "height": int(info['height']),
             "duration": float(info['duration'])}
@@ -37,7 +36,6 @@ class FrameReader(object):
                     '-vcodec', 'rawvideo',
                     '-']
         self.pipe = subprocess.Popen(command, stdout = subprocess.PIPE, bufsize=10**8)
-
     def __iter__(self):
         return self
 
@@ -88,35 +86,28 @@ def process_im(im):
     return im
 
 def compute(video, frame_dir):
-    try:
+    try : 
         frames = FrameReader(video)
-    except subprocess.CalledProcessError:
-        print "failed due to CalledProcessError"
-        return False
-
+    except :
+        print("Got fucked")
     for _ in range(FRAMES_DELAY):
         try:
             frames.next()
         except StopIteration:
             return False
-
     # Initiate SIFT detector
-    sift = cv2.SIFT()
-    #sift = cv2.ORB()
-    #sift = cv2.BRISK()
+    sift = cv2.xfeatures2d.SIFT_create()
 
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
     search_params = dict(checks = 50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
-
     movie_clip = 0
     movie_clip_files = []
     for _ in range(100):
         try:
             img2 = frames.next()
         except StopIteration:
-            print "end of stream"
             break
 
         bg_img = process_im(img2.copy())
@@ -134,7 +125,6 @@ def compute(video, frame_dir):
             #img1 = cv2.imread(im1,0)
             kp1, des1 = sift.detectAndCompute(img1,None)
             if des1 is None or des2 is None:
-                print "Empty matches"
                 M = np.eye(3)
                 failed = True
             elif len(kp1) < 2 or len(kp2) < 2:
@@ -193,7 +183,6 @@ def compute(video, frame_dir):
         if len(movie) < MIN_FRAMES:
             print "this movie clip is too short, causing fail"
             failed = True
-
         if failed:
             print "aborting movie clip due to failure"
         else:   
@@ -207,14 +196,15 @@ def compute(video, frame_dir):
             movie_clip += 1
 
     frames.close()
-
+    print("fucking here")
     open(frame_dir + "/list.txt", "w").write("\n".join(movie_clip_files))
 
 def get_stable_path(video):
-    #return "frames-stable/{}".format(video)
-    return "frames-stable-many/{}".format(video)
+    video_name = video.split("/")[-1].split(".")[0]
+    return "/data/gpu/prannay/video_stable/%s"%(video_name)
 
-work = [x.strip() for x in open("scene_extract/job_list.txt")]
+work = [x.strip() for x in open("job_list.txt")]
+work = filter(lambda x: "running" in  x, work)
 random.shuffle(work)
 
 for video in work:
@@ -222,7 +212,7 @@ for video in work:
     lock_file = stable_path + ".lock"
 
     if os.path.exists(stable_path) or os.path.exists(lock_file):
-        print "already done: {}".format(stable_path)
+        print("already done: %s"%(stable_path))
         continue
 
     try:
@@ -238,7 +228,6 @@ for video in work:
     except OSError:
         pass
 
-    print video
 
     #result = compute("videos/" + video, stable_path)
     result = compute(video, stable_path)
